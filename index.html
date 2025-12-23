@@ -674,7 +674,7 @@
       </div>
     </div>
     <div class="header-text-block">
-      <div class="header-title-main">Недельный планер сотрудников Севстар</div>
+      <div class="header-title-main">Недельный планер</div>
       <div class="header-title-sub">Фокус, задачи и прогресс на неделю</div>
     </div>
     <div class="header-sub" id="currentRangeLabel"></div>
@@ -971,6 +971,16 @@
             saveWeek(week);
           });
 
+          // Enter: сохранить и спрятать клавиатуру
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              task.text = input.value;
+              saveWeek(week);
+              input.blur();
+            }
+          });
+
           row.addEventListener("click", () => {
             openTaskModal(task, week);
           });
@@ -1192,6 +1202,14 @@
             t.text = input.value;
             saveWeek(week);
           });
+          input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              t.text = input.value;
+              saveWeek(week);
+              input.blur();
+            }
+          });
 
           const del = document.createElement("button");
           del.className = "item-delete";
@@ -1272,6 +1290,22 @@
       }
     }
 
+    // скрывать клавиатуру по тапу вне полей
+    document.addEventListener("click", (e) => {
+      const target = e.target;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.closest(".modal")
+      ) {
+        return;
+      }
+      const active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) {
+        active.blur();
+      }
+    });
+
     window.addEventListener("DOMContentLoaded", () => {
       applyTgMiniClassIfNeeded();
       const today = new Date();
@@ -1283,4 +1317,3 @@
 </div>
 </body>
 </html>
-
