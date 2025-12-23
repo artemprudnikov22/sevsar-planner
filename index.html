@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Недельный планер сотрудников Севстар</title>
+  <style>
+    :root {
+      --sev-purple: #6429a5;
+      --sev-yellow: #f1a61a;
+      --sev-black: #353333;
+      --sev-white: #ffffff;
+      --sev-paper: #f6f1e8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: var(--sev-paper);
+      color: var(--sev-black);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px repeat(7, minmax(180px, 1fr));
+      grid-template-rows: 100px auto;
+      gap: 8px;
+      padding: 12px;
+      position: relative;
+    }
+
+    /* ===== HEADER ===== */
+
+    header {
+      grid-column: 1 / span 8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px 10px;
+      background: var(--sev-white);
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 6px 20px rgba(26, 16, 53, 0.18);
+      border-bottom: 4px solid var(--sev-purple);
+      position: relative;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      width: 90px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .logo img {
+      width: 90px;
+      height: auto;
+      display: block;
+    }
+
+    .header-text-block {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .header-title-main {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--sev-purple);
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .header-title-sub {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--sev-purple);
+      text-align: center;
+    }
+
+    .header-sub {
+      margin-left: auto;
+      font-size: 13px;
+      color: #8b8b99;
+    }
+
+    /* ===== SIDEBAR ===== */
+
+    .sidebar {
+      grid-row: 2 / span 1;
+      background: var(--sev-white);
+      border-radius: 18px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 12px 32px rgba(26, 16, 53, 0.18);
+      border-left: 4px solid var(--sev-purple);
+      font-size: 12px;
+    }
+
+    .sidebar-section-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: var(--sev-black);
+    }
+
+    .sidebar-section-caption {
+      font-size: 11px;
+      color: #a0a0b5;
+      margin-bottom: 4px;
+    }
+
+    .week-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .nav-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(100,41,165,0.4);
+      padding: 3px 9px;
+      font-size: 11px;
+      background: rgba(100,41,165,0.12);
+      color: var(--sev-purple);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      transition: all 0.15s ease;
+    }
+    .nav-btn:hover {
+      background: rgba(100,41,165,0.2);
+      box-shadow: 0 2px 6px rgba(100,41,165,0.45);
+    }
+
+    .month-label {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--sev-black);
+    }
+
+    .week-start-input {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid #d8dae5;
+      font-size: 12px;
+      background: #f9fafc;
+    }
+
+    .progress-box {
+      padding: 8px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(241,166,26,0.18), rgba(255,255,255,1));
+      border: 1px solid rgba(241,166,26,0.6);
+    }
+
+    .progress-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      overflow: hidden;
+    }
+
+    .progress-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--sev-purple), var(--sev-yellow));
+      transition: width 0.25s ease;
+    }
+
+    /* ===== MONTH CALENDAR ===== */
+
+    .month-calendar {
+      border-radius: 14px;
+      background: #f9fafc;
+      border: 1px solid rgba(100,41,165,0.18);
+      padding: 8px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.7);
+    }
+
+    .month-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sev-black);
+    }
+
+    .month-week-label {
+      font-size: 11px;
+      color: #8b8b99;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      font-size: 10px;
+    }
+
+    .cal-weekday {
+      text-align: center;
+      padding: 3px 0;
+      color: #a3a3b8;
+      font-weight: 500;
+    }
+
+    .cal-day {
+      text-align: center;
+      padding: 4px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: var(--sev-black);
+    }
+
+    .cal-day:hover {
+      background: #e5e7eb;
+    }
+
+    .cal-day.other-month {
+      color: #d0d2dd;
+    }
+
+    .cal-day.selected-week {
+      background: rgba(241,166,26,0.25);
+      color: var(--sev-black);
+      box-shadow: 0 0 0 1px rgba(241,166,26,0.6);
+    }
+
+    .cal-day.today {
+      border: 1px solid var(--sev-purple);
+    }
+
+    /* ===== HABITS & WEEKLY TASKS ===== */
+
+    .habits,
+    .weekly-tasks {
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 8px;
+    }
+
+    .habit-list,
+    .weekly-task-list {
+      max-height: 120px;
+      overflow-y: auto;
+      padding-right: 4px;
+      margin-bottom: 4px;
+    }
+
+    .habit-item,
+    .weekly-task-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 4px;
+      padding: 3px 4px;
+      border-radius: 8px;
+      background: #f9fafc;
+    }
+
+    .weekly-task-item {
+      grid-template-columns: auto 1fr auto;
+    }
+
+    .habit-item input[type="text"],
+    .weekly-task-item input[type="text"] {
+      border: none;
+      border-bottom: 1px dashed #d4d4e0;
+      font-size: 11px;
+      padding: 1px 2px;
+      outline: none;
+      background: transparent;
+      width: 100%;
+    }
+
+    .item-delete {
+      border: none;
+      background: transparent;
+      color: #c4c4d0;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+    .item-delete:hover { color: #ff6b6b; }
+
+    .small-btn {
+      padding: 3px 8px;
+      font-size: 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(241,166,26,0.7);
+      background: rgba(241,166,26,0.1);
+      color: var(--sev-black);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .small-btn:hover {
+      background: rgba(241,166,26,0.2);
+    }
+
+    /* ===== DAY COLUMNS ===== */
+
+    .day-column {
+      background: var(--sev-white);
+      border-radius: 18px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 10px 26px rgba(26, 16, 53, 0.18);
+      font-size: 12px;
+      overflow: hidden;
+    }
+
+    .day-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .day-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--sev-purple);
+    }
+
+    .day-date {
+      font-size: 11px;
+      color: #8b8b99;
+    }
+
+    .circle-progress {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background:
+        conic-gradient(var(--sev-yellow) 0deg, var(--sev-yellow) var(--deg, 0deg), #e5e7eb var(--deg, 0deg));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      border: 3px solid #f9fafc;
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.05);
+    }
+
+    .circle-progress-inner {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #f9fafc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--sev-black);
+    }
+
+    .focus {
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 4px 6px;
+      font-size: 11px;
+      min-height: 40px;
+      background: #f9fafc;
+    }
+
+    .focus textarea {
+      width: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      font-size: 11px;
+      background: transparent;
+    }
+
+    .tasks {
+      flex: 1;
+      border-radius: 12px;
+      border: 1px solid rgba(100,41,165,0.15);
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #fcfcff;
+    }
+
+    .tasks-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      margin-bottom: 4px;
+      color: #6f7080;
+    }
+
+    .tasks-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .task-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 3px;
+      padding: 3px 4px;
+      border-radius: 8px;
+      background: rgba(241,166,26,0.12);
+      transition: background 0.15s ease;
+      cursor: pointer;
+    }
+
+    .task-row:hover {
+      background: rgba(241,166,26,0.22);
+    }
+
+    .task-row input[type="checkbox"] {
+      flex-shrink: 0;
+    }
+
+    .task-row input[type="text"] {
+      border: none;
+      border-bottom: 1px dashed #d4d4e0;
+      font-size: 11px;
+      padding: 1px 2px;
+      outline: none;
+      background: transparent;
+      width: 100%;
+    }
+
+    .task-title.done {
+      text-decoration-line: line-through;
+      text-decoration-color: #a1a1b0;
+      text-decoration-thickness: 1.5px;
+      color: #a1a1b0;
+    }
+
+    .task-delete {
+      border: none;
+      background: transparent;
+      color: #c4c4d0;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+    .task-delete:hover { color: #ff6b6b; }
+
+    .notes-block {
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      padding: 4px 6px;
+      font-size: 11px;
+      min-height: 48px;
+      background: #f9fafc;
+    }
+
+    .notes-block-title {
+      font-weight: 600;
+      font-size: 11px;
+      margin-bottom: 2px;
+      color: #6f7080;
+    }
+
+    .notes-block textarea {
+      width: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      font-size: 11px;
+      background: transparent;
+    }
+
+    .small-list {
+      list-style: decimal;
+      padding-left: 16px;
+      margin-top: 2px;
+    }
+
+    .small-list li {
+      margin-bottom: 2px;
+    }
+
+    .small-list input[type="text"] {
+      width: 100%;
+      border: none;
+      border-bottom: 1px dashed #d4d4e0;
+      font-size: 11px;
+      padding: 1px 2px;
+      outline: none;
+      background: transparent;
+    }
+
+    .day-mon { border-top: 4px solid #2563eb; }
+    .day-tue { border-top: 4px solid #22c55e; }
+    .day-wed { border-top: 4px solid #a855f7; }
+    .day-thu { border-top: 4px solid #f97316; }
+    .day-fri { border-top: 4px solid var(--sev-yellow); }
+    .day-sat { border-top: 4px solid #ec4899; }
+    .day-sun { border-top: 4px solid #f97373; }
+
+    /* ===== MODAL ===== */
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(420px, 90vw);
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: 0 20px 60px rgba(15,23,42,0.4);
+      animation: pop 0.18s ease-out;
+      border-top: 4px solid var(--sev-purple);
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .modal-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--sev-black);
+    }
+
+    .modal-close {
+      border: none;
+      background: transparent;
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      color: #9ca3af;
+    }
+
+    .modal-section-label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 6px;
+      margin-bottom: 2px;
+    }
+
+    .modal input[type="text"],
+    .modal textarea {
+      width: 100%;
+      font-size: 12px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      padding: 5px 7px;
+      outline: none;
+    }
+
+    .modal textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+      gap: 6px;
+    }
+
+    .modal-btn {
+      border-radius: 999px;
+      border: 1px solid var(--sev-purple);
+      background: var(--sev-purple);
+      color: white;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .modal-btn.secondary {
+      border-color: #e5e7eb;
+      background: #f9fafc;
+      color: #374151;
+    }
+
+    @media (max-width: 1300px) {
+      .app {
+        grid-template-columns: 260px repeat(4, minmax(180px, 1fr));
+        grid-auto-rows: minmax(320px, auto);
+      }
+    }
+
+    @media (max-width: 960px) {
+      .app {
+        grid-template-columns: minmax(280px, 1fr);
+        grid-template-rows: auto;
+      }
+      header { grid-column: 1 / span 1; }
+      .sidebar { grid-column: 1 / span 1; }
+      .day-column { grid-column: 1 / span 1; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <img src="logo.png" alt="Севстар" />
+      </div>
+    </div>
+    <div class="header-text-block">
+      <div class="header-title-main">Недельный планер сотрудников Севстар</div>
+      <div class="header-title-sub">Фокус, задачи и прогресс на неделю</div>
+    </div>
+    <div class="header-sub" id="currentRangeLabel"></div>
+  </header>
+
+  <aside class="sidebar">
+    <div>
+      <div class="sidebar-section-title">Неделя</div>
+      <div class="sidebar-section-caption">Выбери неделю через календарь или стрелки</div>
+
+      <div class="week-controls">
+        <button id="prevWeek" class="nav-btn">&larr; неделя</button>
+        <div>
+          <div class="month-label" id="monthLabel"></div>
+          <input id="weekStart" type="date" class="week-start-input" />
+        </div>
+        <button id="nextWeek" class="nav-btn">неделя &rarr;</button>
+      </div>
+
+      <div class="month-calendar">
+        <div class="month-header">
+          <span id="monthTitle">Октябрь 2025</span>
+          <span class="month-week-label" id="monthWeekLabel"></span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+    </div>
+
+    <div class="progress-box">
+      <div class="sidebar-section-title">Прогресс недели</div>
+      <div class="progress-bar">
+        <div id="weekProgressBar" class="progress-bar-inner"></div>
+      </div>
+      <div id="weekProgressText" style="font-size:11px;margin-top:4px;">0%</div>
+    </div>
+
+    <div class="habits">
+      <div class="sidebar-section-title">Еженедельные привычки</div>
+      <div id="habitList" class="habit-list"></div>
+      <button id="addHabit" class="small-btn">+ привычка</button>
+    </div>
+
+    <div class="weekly-tasks">
+      <div class="sidebar-section-title">Еженедельный список задач</div>
+      <div id="weeklyTaskList" class="weekly-task-list"></div>
+      <button id="addWeeklyTask" class="small-btn">+ задача</button>
+    </div>
+  </aside>
+
+  <!-- модалка задачи -->
+  <div id="taskModalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Задача</div>
+        <button id="modalClose" class="modal-close">&times;</button>
+      </div>
+
+      <div>
+        <div class="modal-section-label">Название</div>
+        <input id="modalTitleInput" type="text" />
+
+        <div class="modal-section-label">Описание</div>
+        <textarea id="modalDescInput" placeholder="Подробнее о задаче"></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button id="modalCancel" class="modal-btn secondary">Отмена</button>
+        <button id="modalSave" class="modal-btn">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DAY_NAMES = [
+      ["понедельник", "day-mon"],
+      ["вторник", "day-tue"],
+      ["среда", "day-wed"],
+      ["четверг", "day-thu"],
+      ["пятница", "day-fri"],
+      ["суббота", "day-sat"],
+      ["воскресенье", "day-sun"],
+    ];
+
+    const MONTH_NAMES = [
+      "Январь","Февраль","Март","Апрель","Май","Июнь",
+      "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"
+    ];
+
+    function formatDate(d) {
+      return d.toISOString().slice(0, 10);
+    }
+
+    function addDays(dateStrOrDate, days) {
+      const d = dateStrOrDate instanceof Date ? new Date(dateStrOrDate) : new Date(dateStrOrDate);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    function startOfWeek(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = (day === 0 ? -6 : 1) - day;
+      return addDays(d, diff);
+    }
+
+    function loadWeek(startDateStr) {
+      const key = "week:" + startDateStr;
+      const raw = localStorage.getItem(key);
+      if (raw) return JSON.parse(raw);
+
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(startDateStr, i);
+        days.push({
+          date: formatDate(d),
+          focus: "",
+          tasks: [],
+          notes: "",
+          improve: ["", "", ""],
+          gratitude: ["", "", ""],
+        });
+      }
+      return {
+        weekStart: startDateStr,
+        days,
+        habits: [],
+        weeklyTasks: [],
+      };
+    }
+
+    function saveWeek(week) {
+      const key = "week:" + week.weekStart;
+      localStorage.setItem(key, JSON.stringify(week));
+    }
+
+    /* --- модалка задачи --- */
+
+    const taskModalBackdrop = document.getElementById("taskModalBackdrop");
+    const modalTitleInput = document.getElementById("modalTitleInput");
+    const modalDescInput  = document.getElementById("modalDescInput");
+    const modalClose  = document.getElementById("modalClose");
+    const modalCancel = document.getElementById("modalCancel");
+    const modalSave   = document.getElementById("modalSave");
+
+    let modalCurrentTask = null;
+    let modalCurrentWeek = null;
+
+    function openTaskModal(task, week) {
+      modalCurrentTask = task;
+      modalCurrentWeek = week;
+      modalTitleInput.value = task.text || "";
+      modalDescInput.value = task.description || "";
+      taskModalBackdrop.classList.add("show");
+      modalTitleInput.focus();
+    }
+
+    function closeTaskModal() {
+      taskModalBackdrop.classList.remove("show");
+      modalCurrentTask = null;
+      modalCurrentWeek = null;
+    }
+
+    modalClose.onclick = closeTaskModal;
+    modalCancel.onclick = closeTaskModal;
+
+    modalSave.onclick = () => {
+      if (!modalCurrentTask || !modalCurrentWeek) return;
+      modalCurrentTask.text = modalTitleInput.value;
+      modalCurrentTask.description = modalDescInput.value;
+      saveWeek(modalCurrentWeek);
+      closeTaskModal();
+      initWeek(modalCurrentWeek.weekStart);
+    };
+
+    taskModalBackdrop.addEventListener("click", (e) => {
+      if (e.target === taskModalBackdrop) closeTaskModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && taskModalBackdrop.classList.contains("show")) {
+        closeTaskModal();
+      }
+    });
+
+    /* --- день --- */
+
+    function createDayColumn(dayIndex, dayData, week) {
+      const [title, cls] = DAY_NAMES[dayIndex];
+      const col = document.createElement("section");
+      col.className = "day-column " + cls;
+
+      const header = document.createElement("div");
+      header.className = "day-header";
+
+      const left = document.createElement("div");
+      const dn = document.createElement("div");
+      dn.className = "day-name";
+      dn.textContent = title;
+      const dd = document.createElement("div");
+      dd.className = "day-date";
+      const d = new Date(dayData.date);
+      dd.textContent = d.getDate().toString().padStart(2,"0") + "." + (d.getMonth()+1).toString().padStart(2,"0");
+      left.appendChild(dn);
+      left.appendChild(dd);
+
+      const circle = document.createElement("div");
+      circle.className = "circle-progress";
+      const circleInner = document.createElement("div");
+      circleInner.className = "circle-progress-inner";
+      circleInner.textContent = "0%";
+      circle.appendChild(circleInner);
+
+      header.appendChild(left);
+      header.appendChild(circle);
+      col.appendChild(header);
+
+      const focus = document.createElement("div");
+      focus.className = "focus";
+      const focusTa = document.createElement("textarea");
+      focusTa.placeholder = "Основное внимание";
+      focusTa.value = dayData.focus || "";
+      focusTa.addEventListener("input", () => {
+        dayData.focus = focusTa.value;
+        saveWeek(week);
+      });
+      focus.appendChild(focusTa);
+      col.appendChild(focus);
+
+      const tasks = document.createElement("div");
+      tasks.className = "tasks";
+
+      const tasksHeader = document.createElement("div");
+      tasksHeader.className = "tasks-header";
+      const thLeft = document.createElement("span");
+      thLeft.textContent = "Задачи на сегодня";
+      const thRight = document.createElement("span");
+      thRight.textContent = "0/0";
+      tasksHeader.appendChild(thLeft);
+      tasksHeader.appendChild(thRight);
+
+      const tasksList = document.createElement("div");
+      tasksList.className = "tasks-list";
+
+      const addTaskBtn = document.createElement("button");
+      addTaskBtn.className = "small-btn";
+      addTaskBtn.textContent = "+ задача";
+
+      tasks.appendChild(tasksHeader);
+      tasks.appendChild(tasksList);
+      tasks.appendChild(addTaskBtn);
+      col.appendChild(tasks);
+
+      function recalcProgress() {
+        const total = dayData.tasks.length;
+        const done = dayData.tasks.filter(t => t.done).length;
+        const percent = total ? Math.round(done / total * 100) : 0;
+        circle.style.setProperty("--deg", (percent / 100) * 360 + "deg");
+        circleInner.textContent = percent + "%";
+        thRight.textContent = done + "/" + total;
+        updateWeekProgress(week);
+      }
+
+      function renderTasks() {
+        tasksList.innerHTML = "";
+        dayData.tasks.forEach(task => {
+          const row = document.createElement("div");
+          row.className = "task-row";
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = !!task.done;
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.value = task.text || "";
+          input.placeholder = "Новая задача";
+          input.className = "task-title" + (task.done ? " done" : "");
+
+          const delBtn = document.createElement("button");
+          delBtn.className = "task-delete";
+          delBtn.innerHTML = "&times;";
+
+          cb.addEventListener("click", (e) => {
+            e.stopPropagation();
+            task.done = cb.checked;
+            saveWeek(week);
+            if (task.done) input.classList.add("done"); else input.classList.remove("done");
+            recalcProgress();
+          });
+
+          input.addEventListener("click", (e) => e.stopPropagation());
+          input.addEventListener("input", () => {
+            task.text = input.value;
+            saveWeek(week);
+          });
+
+          row.addEventListener("click", () => {
+            openTaskModal(task, week);
+          });
+
+          delBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const idx = dayData.tasks.indexOf(task);
+            if (idx !== -1) {
+              dayData.tasks.splice(idx, 1);
+              saveWeek(week);
+              renderTasks();
+            }
+          });
+
+          row.appendChild(cb);
+          row.appendChild(input);
+          row.appendChild(delBtn);
+          tasksList.appendChild(row);
+        });
+        recalcProgress();
+      }
+
+      addTaskBtn.addEventListener("click", () => {
+        dayData.tasks.push({
+          id: Date.now() + "-" + Math.random().toString(16).slice(2),
+          text: "",
+          description: "",
+          done: false,
+        });
+        saveWeek(week);
+        renderTasks();
+      });
+
+      renderTasks();
+
+      function createListBlock(titleText, arrRef) {
+        const block = document.createElement("div");
+        block.className = "notes-block";
+        const t = document.createElement("div");
+        t.className = "notes-block-title";
+        t.textContent = titleText;
+        block.appendChild(t);
+        const ul = document.createElement("ul");
+        ul.className = "small-list";
+        for (let i = 0; i < arrRef.length; i++) {
+          const li = document.createElement("li");
+          const inp = document.createElement("input");
+          inp.type = "text";
+          inp.value = arrRef[i] || "";
+          inp.addEventListener("input", () => {
+            arrRef[i] = inp.value;
+            saveWeek(week);
+          });
+          li.appendChild(inp);
+          ul.appendChild(li);
+        }
+        block.appendChild(ul);
+        return block;
+      }
+
+      const notes = document.createElement("div");
+      notes.className = "notes-block";
+      const nt = document.createElement("div");
+      nt.className = "notes-block-title";
+      nt.textContent = "Заметки";
+      const nta = document.createElement("textarea");
+      nta.rows = 3;
+      nta.value = dayData.notes || "";
+      nta.addEventListener("input", () => {
+        dayData.notes = nta.value;
+        saveWeek(week);
+      });
+      notes.appendChild(nt);
+      notes.appendChild(nta);
+      col.appendChild(notes);
+
+      col.appendChild(createListBlock("Что можно улучшить?", dayData.improve));
+      col.appendChild(createListBlock("За что я благодарен?", dayData.gratitude));
+
+      return col;
+    }
+
+    function updateWeekProgress(week) {
+      let done = 0;
+      let total = 0;
+      week.days.forEach(d => {
+        total += d.tasks.length;
+        done += d.tasks.filter(t => t.done).length;
+      });
+      const percent = total ? Math.round(done / total * 100) : 0;
+      const bar = document.getElementById("weekProgressBar");
+      const text = document.getElementById("weekProgressText");
+      if (bar && text) {
+        bar.style.width = percent + "%";
+        text.textContent = percent + "%";
+      }
+    }
+
+    /* --- календарь месяца --- */
+
+    function renderMonthCalendar(weekStartStr, week) {
+      const weekStartDate = new Date(weekStartStr);
+      const monthTitle = document.getElementById("monthTitle");
+      const monthLabel = document.getElementById("monthLabel");
+      const currentRangeLabel = document.getElementById("currentRangeLabel");
+      const grid = document.getElementById("calendarGrid");
+      const weekLabel = document.getElementById("monthWeekLabel");
+
+      const monthIndex = weekStartDate.getMonth();
+      monthTitle.textContent = MONTH_NAMES[monthIndex] + " " + weekStartDate.getFullYear();
+      monthLabel.textContent = MONTH_NAMES[monthIndex] + " " + weekStartDate.getFullYear();
+
+      const weekEndDate = addDays(weekStartDate, 6);
+      currentRangeLabel.textContent =
+        weekStartDate.getDate().toString().padStart(2,"0") + "." +
+        (weekStartDate.getMonth()+1).toString().padStart(2,"0") +
+        " - " +
+        weekEndDate.getDate().toString().padStart(2,"0") + "." +
+        (weekEndDate.getMonth()+1).toString().padStart(2,"0");
+
+      grid.innerHTML = "";
+      const weekdays = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+      weekdays.forEach(w => {
+        const div = document.createElement("div");
+        div.className = "cal-weekday";
+        div.textContent = w;
+        grid.appendChild(div);
+      });
+
+      const firstMonthDay = new Date(weekStartDate.getFullYear(), monthIndex, 1);
+      let firstGridDay = startOfWeek(firstMonthDay);
+      const todayStr = formatDate(new Date());
+
+      for (let i = 0; i < 42; i++) {
+        const d = addDays(firstGridDay, i);
+        const cell = document.createElement("div");
+        cell.className = "cal-day";
+        if (d.getMonth() !== monthIndex) cell.classList.add("other-month");
+        const text = document.createElement("div");
+        text.textContent = d.getDate();
+        cell.appendChild(text);
+
+        const dStr = formatDate(d);
+        const inWeek = week.days.some(day => day.date === dStr);
+        if (inWeek) cell.classList.add("selected-week");
+        if (dStr === todayStr) cell.classList.add("today");
+
+        cell.addEventListener("click", () => {
+          const ws = startOfWeek(d);
+          initWeek(formatDate(ws));
+        });
+
+        grid.appendChild(cell);
+      }
+
+      const weekNumber = Math.floor((weekStartDate.getDate() - 1) / 7) + 1;
+      weekLabel.textContent = "Неделя " + weekNumber;
+    }
+
+    /* --- привычки и недельные задачи --- */
+
+    function initHabitsAndWeeklyTasks(week) {
+      const habitList = document.getElementById("habitList");
+      const weeklyTaskList = document.getElementById("weeklyTaskList");
+      const addHabitBtn = document.getElementById("addHabit");
+      const addWeeklyTaskBtn = document.getElementById("addWeeklyTask");
+
+      function renderHabits() {
+        habitList.innerHTML = "";
+        week.habits.forEach(h => {
+          const row = document.createElement("div");
+          row.className = "habit-item";
+          const name = document.createElement("input");
+          name.type = "text";
+          name.placeholder = "Название привычки";
+          name.value = h.name || "";
+          name.addEventListener("input", () => {
+            h.name = name.value;
+            saveWeek(week);
+          });
+
+          const del = document.createElement("button");
+          del.className = "item-delete";
+          del.innerHTML = "&times;";
+          del.addEventListener("click", () => {
+            const idx = week.habits.indexOf(h);
+            if (idx !== -1) {
+              week.habits.splice(idx, 1);
+              saveWeek(week);
+              renderHabits();
+            }
+          });
+
+          row.appendChild(name);
+          row.appendChild(del);
+          habitList.appendChild(row);
+        });
+      }
+
+      function renderWeeklyTasks() {
+        weeklyTaskList.innerHTML = "";
+        week.weeklyTasks.forEach(t => {
+          const row = document.createElement("div");
+          row.className = "weekly-task-item";
+
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.checked = !!t.done;
+          cb.addEventListener("change", () => {
+            t.done = cb.checked;
+            saveWeek(week);
+          });
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.placeholder = "Задача";
+          input.value = t.text || "";
+          input.addEventListener("input", () => {
+            t.text = input.value;
+            saveWeek(week);
+          });
+
+          const del = document.createElement("button");
+          del.className = "item-delete";
+          del.innerHTML = "&times;";
+          del.addEventListener("click", () => {
+            const idx = week.weeklyTasks.indexOf(t);
+            if (idx !== -1) {
+              week.weeklyTasks.splice(idx, 1);
+              saveWeek(week);
+              renderWeeklyTasks();
+            }
+          });
+
+          row.appendChild(cb);
+          row.appendChild(input);
+          row.appendChild(del);
+          weeklyTaskList.appendChild(row);
+        });
+      }
+
+      addHabitBtn.onclick = () => {
+        week.habits.push({ id: Date.now() + "", name: "" });
+        saveWeek(week);
+        renderHabits();
+      };
+
+      addWeeklyTaskBtn.onclick = () => {
+        week.weeklyTasks.push({ id: Date.now() + "", text: "", done: false });
+        saveWeek(week);
+        renderWeeklyTasks();
+      };
+
+      renderHabits();
+      renderWeeklyTasks();
+    }
+
+    /* --- init --- */
+
+    function initWeek(startDateStr) {
+      const app = document.querySelector(".app");
+      while (app.children.length > 2) {
+        app.removeChild(app.lastChild);
+      }
+
+      const week = loadWeek(startDateStr);
+
+      week.days.forEach((day, idx) => {
+        const col = createDayColumn(idx, day, week);
+        app.appendChild(col);
+      });
+
+      const wsInput = document.getElementById("weekStart");
+      wsInput.value = startDateStr;
+      wsInput.onchange = () => {
+        initWeek(wsInput.value);
+      };
+
+      initHabitsAndWeeklyTasks(week);
+      updateWeekProgress(week);
+      renderMonthCalendar(startDateStr, week);
+
+      document.getElementById("prevWeek").onclick = () => {
+        const d = addDays(startDateStr, -7);
+        initWeek(formatDate(d));
+      };
+      document.getElementById("nextWeek").onclick = () => {
+        const d = addDays(startDateStr, 7);
+        initWeek(formatDate(d));
+      };
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const today = new Date();
+      const ws = startOfWeek(today);
+      const weekStartStr = formatDate(ws);
+      initWeek(weekStartStr);
+    });
+  </script>
+</div>
+</body>
+</html>
