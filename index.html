@@ -647,6 +647,120 @@
       color: #374151;
     }
 
+    /* ===== AI CHAT WINDOW ===== */
+    #ai-chat {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 320px;
+      max-height: 500px;
+      background: var(--sev-white);
+      border: 2px solid var(--sev-purple);
+      border-radius: 18px;
+      box-shadow: 0 12px 40px rgba(100,41,165,0.3);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    #ai-chat.minimized {
+      width: 60px;
+      height: 60px;
+    }
+
+    #ai-chat-header {
+      background: linear-gradient(135deg, var(--sev-purple), #7c3aed);
+      color: #fff;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+
+    #ai-chat-toggle {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+    }
+
+    #ai-chat-body {
+      flex: 1;
+      min-height: 200px;
+      overflow-y: auto;
+      padding: 12px;
+      background: #f9fafc;
+    }
+
+    .ai-message {
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      max-width: 90%;
+      word-wrap: break-word;
+    }
+
+    .ai-message.user {
+      background: var(--sev-yellow);
+      color: var(--sev-black);
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .ai-message.ai {
+      background: var(--sev-purple);
+      color: white;
+      margin-right: auto;
+    }
+
+    #ai-chat-input-wrap {
+      display: flex;
+      border-top: 1px solid rgba(100,41,165,0.2);
+      background: var(--sev-white);
+    }
+
+    #ai-input {
+      flex: 1;
+      border: none;
+      padding: 10px 12px;
+      outline: none;
+      font-size: 13px;
+      background: transparent;
+    }
+
+    #ai-send {
+      background: var(--sev-purple);
+      color: white;
+      border: none;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s ease;
+    }
+
+    #ai-send:hover {
+      background: #5a1f8d;
+    }
+
+    #ai-send:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     /* ===== мобильный: горизонтальный скролл дней ===== */
 
     @media (max-width: 960px) {
@@ -661,6 +775,12 @@
       .day-column {
         grid-column: auto;
         min-width: 260px;
+      }
+
+      #ai-chat {
+        bottom: 10px;
+        right: 10px;
+        width: 280px;
       }
     }
   </style>
@@ -746,6 +866,25 @@
       </div>
     </div>
   </div>
+
+  <!-- AI CHAT WINDOW -->
+  <div id="ai-chat">
+    <div id="ai-chat-header">
+      <span>🤖 Общение с Джон Кремль</span>
+      <button id="ai-chat-toggle" title="Свернуть">−</button>
+    </div>
+    <div id="ai-chat-body">
+      <div class="ai-message ai" style="background: rgba(100,41,165,0.1); color: var(--sev-black); text-align: center; font-size: 11px;">
+        Привет! Я помогу с планированием задач, анализом недели и советами по продуктивности. 
+        Просто напиши вопрос!
+      </div>
+    </div>
+    <div id="ai-chat-input-wrap">
+      <input id="ai-input" type="text" placeholder="Задай вопрос по задачам недели..." />
+      <button id="ai-send" title="Отправить">➤</button>
+    </div>
+  </div>
+</div>
 
   <script>
     const DAY_NAMES = [
@@ -856,6 +995,89 @@
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && taskModalBackdrop.classList.contains("show")) {
         closeTaskModal();
+      }
+    });
+
+    /* --- AI CHAT --- */
+    const aiChat = document.getElementById("ai-chat");
+    const aiChatHeader = document.getElementById("ai-chat-header");
+    const aiChatToggle = document.getElementById("ai-chat-toggle");
+    const aiInput = document.getElementById("ai-input");
+    const aiSend = document.getElementById("ai-send");
+    const aiBody = document.getElementById("ai-chat-body");
+
+    let isChatMinimized = false;
+
+    // Toggle minimize/expand
+    aiChatToggle.onclick = () => {
+      isChatMinimized = !isChatMinimized;
+      aiChat.classList.toggle("minimized", isChatMinimized);
+      aiChatToggle.textContent = isChatMinimized ? "+" : "−";
+    };
+
+    function addMessage(sender, text, isAi = false) {
+      const div = document.createElement("div");
+      div.className = `ai-message ${isAi ? 'ai' : 'user'}`;
+      div.innerHTML = `<strong>${isAi ? 'Джон Кремль' : 'Вы'}:</strong> ${text}`;
+      aiBody.appendChild(div);
+      aiBody.scrollTop = aiBody.scrollHeight;
+    }
+
+    async function sendToAI(message, weekData) {
+      // ЗАМЕНИ ЭТО НА СВОЙ N8N WEBHOOK URL
+      const N8N_WEBHOOK_URL = "https://YOUR_N8N_URL/webhook/ai-chat-john-kreml";
+      
+      aiSend.disabled = true;
+      aiSend.textContent = "⏳";
+
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: message,
+            context: weekData,
+            userAgent: "Севстар Планер",
+            timestamp: new Date().toISOString()
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        addMessage("", data.reply || data.answer || "Не удалось получить ответ", true);
+      } catch (error) {
+        console.error("AI Chat Error:", error);
+        addMessage("", "❌ Ошибка связи с Джоном Кремлем. Проверьте n8n webhook.", true);
+      } finally {
+        aiSend.disabled = false;
+        aiSend.textContent = "➤";
+      }
+    }
+
+    function getCurrentWeekData() {
+      const weekStartInput = document.getElementById("weekStart");
+      const weekStart = weekStartInput ? weekStartInput.value : formatDate(startOfWeek(new Date()));
+      return loadWeek(weekStart);
+    }
+
+    aiSend.addEventListener("click", () => {
+      const text = aiInput.value.trim();
+      if (!text) return;
+
+      const weekData = getCurrentWeekData();
+      addMessage("", text, false);
+      aiInput.value = "";
+      
+      sendToAI(text, weekData);
+    });
+
+    aiInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        aiSend.click();
       }
     });
 
@@ -971,7 +1193,6 @@
             saveWeek(week);
           });
 
-          // Enter: сохранить и спрятать клавиатуру
           input.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -1296,7 +1517,8 @@
       if (
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
-        target.closest(".modal")
+        target.closest(".modal") ||
+        target.closest("#ai-chat")
       ) {
         return;
       }
@@ -1314,6 +1536,5 @@
       initWeek(weekStartStr);
     });
   </script>
-</div>
 </body>
 </html>
