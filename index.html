@@ -138,6 +138,31 @@
       font-size: 12px;
     }
 
+    /* Кнопка открытия AI Чата в сайдбаре */
+    .ai-sidebar-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, var(--sev-purple), #7c3aed);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(100,41,165,0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .ai-sidebar-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(100,41,165,0.4);
+    }
+    .ai-sidebar-btn:active {
+      transform: translateY(0);
+    }
+
     .sidebar-section-title {
       font-weight: 600;
       margin-bottom: 4px;
@@ -659,7 +684,8 @@
       border-radius: 18px;
       box-shadow: 0 12px 40px rgba(100,41,165,0.3);
       font-size: 12px;
-      display: flex;
+      /* ИЗМЕНЕНИЕ: Скрываем по умолчанию */
+      display: none;
       flex-direction: column;
       overflow: hidden;
       z-index: 1000;
@@ -684,7 +710,13 @@
       user-select: none;
     }
 
-    #ai-chat-toggle {
+    .chat-controls {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    #ai-chat-toggle, #close-ai-chat {
       background: none;
       border: none;
       color: #fff;
@@ -695,7 +727,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-left: auto;
+    }
+    
+    #close-ai-chat:hover {
+        color: #ffcccc;
     }
 
     #ai-chat-body {
@@ -801,6 +836,10 @@
   </header>
 
   <aside class="sidebar">
+    <button id="open-ai-chat-btn" class="ai-sidebar-btn">
+      <span>🤖</span> AI Помощник
+    </button>
+    
     <div>
       <div class="sidebar-section-title">Неделя</div>
       <div class="sidebar-section-caption">Выбери неделю через календарь или стрелки</div>
@@ -844,7 +883,6 @@
     </div>
   </aside>
 
-  <!-- модалка задачи -->
   <div id="taskModalBackdrop" class="modal-backdrop">
     <div class="modal">
       <div class="modal-header">
@@ -867,11 +905,13 @@
     </div>
   </div>
 
-  <!-- AI CHAT WINDOW -->
   <div id="ai-chat">
     <div id="ai-chat-header">
       <span>🤖 Общение с Джон Кремль</span>
-      <button id="ai-chat-toggle" title="Свернуть">−</button>
+      <div class="chat-controls">
+        <button id="ai-chat-toggle" title="Свернуть">−</button>
+        <button id="close-ai-chat" title="Закрыть">&times;</button>
+      </div>
     </div>
     <div id="ai-chat-body">
       <div class="ai-message ai" style="background: rgba(100,41,165,0.1); color: var(--sev-black); text-align: center; font-size: 11px;">
@@ -907,7 +947,8 @@
     }
 
     function addDays(dateStrOrDate, days) {
-      const d = dateStrOrDate instanceof Date ? new Date(dateStrOrDate) : new Date(dateStrOrDate);
+      const d = dateStrOrDate instanceof Date 
+        ? new Date(dateStrOrDate) : new Date(dateStrOrDate);
       d.setDate(d.getDate() + days);
       return d;
     }
@@ -978,7 +1019,6 @@
 
     modalClose.onclick = closeTaskModal;
     modalCancel.onclick = closeTaskModal;
-
     modalSave.onclick = () => {
       if (!modalCurrentTask || !modalCurrentWeek) return;
       modalCurrentTask.text = modalTitleInput.value;
@@ -991,7 +1031,6 @@
     taskModalBackdrop.addEventListener("click", (e) => {
       if (e.target === taskModalBackdrop) closeTaskModal();
     });
-
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && taskModalBackdrop.classList.contains("show")) {
         closeTaskModal();
@@ -1005,15 +1044,40 @@
     const aiInput = document.getElementById("ai-input");
     const aiSend = document.getElementById("ai-send");
     const aiBody = document.getElementById("ai-chat-body");
+    // Новые элементы управления
+    const openAiChatBtn = document.getElementById("open-ai-chat-btn");
+    const closeAiChatBtn = document.getElementById("close-ai-chat");
 
     let isChatMinimized = false;
 
     // Toggle minimize/expand
-    aiChatToggle.onclick = () => {
+    aiChatToggle.onclick = (e) => {
+      e.stopPropagation(); // Чтобы не срабатывал клик по хидеру если будет
       isChatMinimized = !isChatMinimized;
       aiChat.classList.toggle("minimized", isChatMinimized);
       aiChatToggle.textContent = isChatMinimized ? "+" : "−";
     };
+
+    // Открытие чата из сайдбара
+    if(openAiChatBtn) {
+      openAiChatBtn.onclick = () => {
+        aiChat.style.display = 'flex';
+        // Если был свернут, разворачиваем
+        if(isChatMinimized) {
+           isChatMinimized = false;
+           aiChat.classList.remove("minimized");
+           aiChatToggle.textContent = "−";
+        }
+      };
+    }
+
+    // Закрытие чата крестиком
+    if(closeAiChatBtn) {
+      closeAiChatBtn.onclick = (e) => {
+        e.stopPropagation();
+        aiChat.style.display = 'none';
+      };
+    }
 
     function addMessage(sender, text, isAi = false) {
       const div = document.createElement("div");
@@ -1026,7 +1090,6 @@
     async function sendToAI(message, weekData) {
       // ЗАМЕНИ ЭТО НА СВОЙ N8N WEBHOOK URL
       const N8N_WEBHOOK_URL = "https://YOUR_N8N_URL/webhook/ai-chat-john-kreml";
-      
       aiSend.disabled = true;
       aiSend.textContent = "⏳";
 
@@ -1090,7 +1153,6 @@
 
       const header = document.createElement("div");
       header.className = "day-header";
-
       const left = document.createElement("div");
       const dn = document.createElement("div");
       dn.className = "day-name";
@@ -1192,7 +1254,6 @@
             task.text = input.value;
             saveWeek(week);
           });
-
           input.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
               e.preventDefault();
@@ -1353,7 +1414,6 @@
           const ws = startOfWeek(d);
           initWeek(formatDate(ws));
         });
-
         grid.appendChild(cell);
       }
 
@@ -1471,12 +1531,13 @@
 
     function initWeek(startDateStr) {
       const app = document.querySelector(".app");
-      while (app.children.length > 2) {
-        app.removeChild(app.lastChild);
-      }
+      // Удаляем старые колонки (но оставляем header, sidebar, modal, chat)
+      // Структура grid такова: header, sidebar, day1..day7.
+      // day-columns имеют класс .day-column
+      const oldCols = document.querySelectorAll(".day-column");
+      oldCols.forEach(col => col.remove());
 
       const week = loadWeek(startDateStr);
-
       week.days.forEach((day, idx) => {
         const col = createDayColumn(idx, day, week);
         app.appendChild(col);
@@ -1518,7 +1579,8 @@
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
         target.closest(".modal") ||
-        target.closest("#ai-chat")
+        target.closest("#ai-chat") || 
+        target.id === "open-ai-chat-btn" // Исключаем кнопку открытия
       ) {
         return;
       }
