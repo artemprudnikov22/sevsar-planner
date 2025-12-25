@@ -91,9 +91,7 @@
     }
 
     .header-sub {
-      margin-left: auto;
-      font-size: 13px;
-      color: #8b8b99;
+      display: none; /* УБРАНО: скрываем отображение дат в заголовке */
     }
 
     /* ===== tg-mini компактный режим ===== */
@@ -1537,9 +1535,10 @@
                date.getFullYear();
       };
       
-      currentRangeLabel.textContent = 
-        formatForDisplay(weekStartDate) + " - " + 
-        formatForDisplay(weekEndDate);
+      // ФИКС: Убрано обновление currentRangeLabel (он скрыт в CSS)
+      // currentRangeLabel.textContent = 
+      //   formatForDisplay(weekStartDate) + " - " + 
+      //   formatForDisplay(weekEndDate);
 
       grid.innerHTML = "";
       
