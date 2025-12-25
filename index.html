@@ -1001,6 +1001,17 @@
       return addDays(d, diff);
     }
 
+    function endOfWeek(date) {
+      const start = startOfWeek(date);
+      return addDays(start, 6);
+    }
+
+    function getWeekNumber(date) {
+      const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+      const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+      return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+    }
+
     function loadWeek(startDateStr) {
       const key = "week:" + startDateStr;
       const raw = localStorage.getItem(key);
@@ -1168,7 +1179,7 @@
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    // Функция для сбора данных недели
+    // Функция для сбора данных недели для AI
     function collectWeekDataForAI() {
       const weekStartInput = document.getElementById("weekStart");
       const weekStart = weekStartInput ? weekStartInput.value : formatDate(startOfWeek(new Date()));
@@ -1177,12 +1188,28 @@
       // Добавляем прогресс недели
       const progress = document.getElementById("weekProgressText")?.textContent || '0%';
       
-      return {
-        ...weekData,  // Все данные недели (days, habits, weeklyTasks)
+      // Преобразуем задачи для AI - оставляем только текст и статус
+      const transformedWeekData = {
+        ...weekData,
+        days: weekData.days.map(day => ({
+          ...day,
+          tasks: day.tasks.map(task => ({
+            text: task.text || "Без названия",
+            done: task.done || false
+            // Исключаем id
+          }))
+        })),
+        habits: weekData.habits.map(h => ({ name: h.name || "Без названия" })),
+        weeklyTasks: weekData.weeklyTasks.map(t => ({
+          text: t.text || "Без названия",
+          done: t.done || false
+        })),
         progress: progress,
         currentWeek: document.getElementById('currentRangeLabel')?.textContent || '',
         collectedAt: new Date().toISOString()
       };
+      
+      return transformedWeekData;
     }
 
     async function sendToAI(message) {
@@ -1488,10 +1515,12 @@
       const weekLabel = document.getElementById("monthWeekLabel");
 
       const monthIndex = weekStartDate.getMonth();
-      monthTitle.textContent = MONTH_NAMES[monthIndex] + " " + weekStartDate.getFullYear();
-      monthLabel.textContent = MONTH_NAMES[monthIndex] + " " + weekStartDate.getFullYear();
+      const year = weekStartDate.getFullYear();
+      
+      monthTitle.textContent = MONTH_NAMES[monthIndex] + " " + year;
+      monthLabel.textContent = MONTH_NAMES[monthIndex] + " " + year;
 
-      const weekEndDate = addDays(weekStartDate, 6);
+      const weekEndDate = endOfWeek(weekStartDate);
       currentRangeLabel.textContent =
         weekStartDate.getDate().toString().padStart(2,"0") + "." +
         (weekStartDate.getMonth()+1).toString().padStart(2,"0") +
@@ -1500,6 +1529,8 @@
         (weekEndDate.getMonth()+1).toString().padStart(2,"0");
 
       grid.innerHTML = "";
+      
+      // Заголовки дней недели
       const weekdays = ["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
       weekdays.forEach(w => {
         const div = document.createElement("div");
@@ -1508,32 +1539,54 @@
         grid.appendChild(div);
       });
 
-      const firstMonthDay = new Date(weekStartDate.getFullYear(), monthIndex, 1);
-      let firstGridDay = startOfWeek(firstMonthDay);
+      // Получаем первый день месяца и первый день для отображения в календаре
+      const firstDayOfMonth = new Date(year, monthIndex, 1);
+      const firstDayOfCalendar = startOfWeek(firstDayOfMonth);
+      
       const todayStr = formatDate(new Date());
+      const weekStartStrFormatted = formatDate(weekStartDate);
 
+      // Создаем 42 дня (6 недель)
       for (let i = 0; i < 42; i++) {
-        const d = addDays(firstGridDay, i);
+        const currentDate = addDays(firstDayOfCalendar, i);
         const cell = document.createElement("div");
         cell.className = "cal-day";
-        if (d.getMonth() !== monthIndex) cell.classList.add("other-month");
+        
+        // Проверяем, не из другого ли месяца
+        if (currentDate.getMonth() !== monthIndex) {
+          cell.classList.add("other-month");
+        }
+        
         const text = document.createElement("div");
-        text.textContent = d.getDate();
+        text.textContent = currentDate.getDate();
         cell.appendChild(text);
 
-        const dStr = formatDate(d);
-        const inWeek = week.days.some(day => day.date === dStr);
-        if (inWeek) cell.classList.add("selected-week");
-        if (dStr === todayStr) cell.classList.add("today");
+        const dateStr = formatDate(currentDate);
+        
+        // Проверяем, входит ли день в выбранную неделю
+        const weekStart = startOfWeek(currentDate);
+        const weekEnd = endOfWeek(currentDate);
+        const currentWeekStartStr = formatDate(weekStart);
+        
+        if (currentWeekStartStr === weekStartStrFormatted) {
+          cell.classList.add("selected-week");
+        }
+        
+        if (dateStr === todayStr) {
+          cell.classList.add("today");
+        }
 
         cell.addEventListener("click", () => {
-          const ws = startOfWeek(d);
-          initWeek(formatDate(ws));
+          // При клике на день переходим к неделе, содержащей этот день
+          const newWeekStart = startOfWeek(currentDate);
+          initWeek(formatDate(newWeekStart));
         });
+        
         grid.appendChild(cell);
       }
 
-      const weekNumber = Math.floor((weekStartDate.getDate() - 1) / 7) + 1;
+      // Номер недели в году
+      const weekNumber = getWeekNumber(weekStartDate);
       weekLabel.textContent = "Неделя " + weekNumber;
     }
 
@@ -1656,20 +1709,27 @@
         app.appendChild(col);
       });
 
+      // Обновляем поле ввода даты
       const wsInput = document.getElementById("weekStart");
       wsInput.value = startDateStr;
+      
+      // Обработчик изменения даты в поле ввода
       wsInput.onchange = () => {
-        initWeek(wsInput.value);
+        const selectedDate = wsInput.value;
+        const weekStart = startOfWeek(selectedDate);
+        initWeek(formatDate(weekStart));
       };
 
       initHabitsAndWeeklyTasks(week);
       updateWeekProgress(week);
       renderMonthCalendar(startDateStr, week);
 
+      // Обработчики для кнопок предыдущей/следующей недели
       document.getElementById("prevWeek").onclick = () => {
         const d = addDays(startDateStr, -7);
         initWeek(formatDate(d));
       };
+      
       document.getElementById("nextWeek").onclick = () => {
         const d = addDays(startDateStr, 7);
         initWeek(formatDate(d));
