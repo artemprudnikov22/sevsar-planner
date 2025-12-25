@@ -678,13 +678,13 @@
       bottom: 20px;
       right: 20px;
       width: 320px;
-      max-height: 500px;
+      height: 500px;
       background: var(--sev-white);
       border: 2px solid var(--sev-purple);
       border-radius: 18px;
       box-shadow: 0 12px 40px rgba(100,41,165,0.3);
       font-size: 12px;
-      /* ИЗМЕНЕНИЕ: Скрываем по умолчанию */
+      /* ИЗМЕНЕНО: закрыт по умолчанию */
       display: none;
       flex-direction: column;
       overflow: hidden;
@@ -693,14 +693,16 @@
     }
 
     #ai-chat.minimized {
-      width: 60px;
-      height: 60px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      overflow: hidden;
     }
 
     #ai-chat-header {
       background: linear-gradient(135deg, var(--sev-purple), #7c3aed);
       color: #fff;
-      padding: 8px 12px;
+      padding: 12px;
       cursor: pointer;
       font-weight: 600;
       font-size: 13px;
@@ -708,6 +710,39 @@
       align-items: center;
       gap: 8px;
       user-select: none;
+      transition: all 0.3s ease;
+    }
+
+    #ai-chat.minimized #ai-chat-header {
+      height: 50px;
+      justify-content: center;
+      padding: 0;
+    }
+
+    #ai-chat.minimized #ai-chat-header span:first-child {
+      display: none;
+    }
+
+    #ai-chat.minimized .chat-controls {
+      display: none;
+    }
+
+    #ai-chat.minimized #ai-chat-header::after {
+      content: "🤖";
+      font-size: 20px;
+    }
+
+    #ai-chat-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      background: #f9fafc;
+      transition: all 0.3s ease;
+    }
+
+    #ai-chat.minimized #ai-chat-body,
+    #ai-chat.minimized #ai-chat-input-wrap {
+      display: none;
     }
 
     .chat-controls {
@@ -722,23 +757,29 @@
       color: #fff;
       font-size: 16px;
       cursor: pointer;
-      width: 20px;
-      height: 20px;
+      width: 24px;
+      height: 24px;
       display: flex;
       align-items: center;
       justify-content: center;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+    
+    #ai-chat-toggle:hover, #close-ai-chat:hover {
+      background: rgba(255,255,255,0.2);
     }
     
     #close-ai-chat:hover {
         color: #ffcccc;
     }
 
-    #ai-chat-body {
-      flex: 1;
-      min-height: 200px;
-      overflow-y: auto;
-      padding: 12px;
-      background: #f9fafc;
+    .toggle-icon {
+      transition: transform 0.3s ease;
+    }
+
+    #ai-chat.minimized .toggle-icon {
+      transform: rotate(180deg);
     }
 
     .ai-message {
@@ -909,7 +950,7 @@
     <div id="ai-chat-header">
       <span>🤖 Общение с Джон Кремль</span>
       <div class="chat-controls">
-        <button id="ai-chat-toggle" title="Свернуть">−</button>
+        <button id="ai-chat-toggle" title="Свернуть"><span class="toggle-icon">−</span></button>
         <button id="close-ai-chat" title="Закрыть">&times;</button>
       </div>
     </div>
@@ -1044,30 +1085,51 @@
     const aiInput = document.getElementById("ai-input");
     const aiSend = document.getElementById("ai-send");
     const aiBody = document.getElementById("ai-chat-body");
-    // Новые элементы управления
     const openAiChatBtn = document.getElementById("open-ai-chat-btn");
     const closeAiChatBtn = document.getElementById("close-ai-chat");
 
     let isChatMinimized = false;
 
-    // Toggle minimize/expand
-    aiChatToggle.onclick = (e) => {
-      e.stopPropagation(); // Чтобы не срабатывал клик по хидеру если будет
+    // Обработчик для всего заголовка
+    aiChatHeader.onclick = (e) => {
+      if (e.target.closest('.chat-controls')) return;
+      
       isChatMinimized = !isChatMinimized;
       aiChat.classList.toggle("minimized", isChatMinimized);
-      aiChatToggle.textContent = isChatMinimized ? "+" : "−";
+      
+      if (aiChatToggle) {
+        aiChatToggle.innerHTML = isChatMinimized ? 
+          '<span class="toggle-icon">+</span>' : 
+          '<span class="toggle-icon">−</span>';
+      }
     };
+
+    // Отдельный обработчик для кнопки сворачивания
+    if (aiChatToggle) {
+      aiChatToggle.onclick = (e) => {
+        e.stopPropagation();
+        isChatMinimized = !isChatMinimized;
+        aiChat.classList.toggle("minimized", isChatMinimized);
+        aiChatToggle.innerHTML = isChatMinimized ? 
+          '<span class="toggle-icon">+</span>' : 
+          '<span class="toggle-icon">−</span>';
+      };
+    }
 
     // Открытие чата из сайдбара
     if(openAiChatBtn) {
       openAiChatBtn.onclick = () => {
         aiChat.style.display = 'flex';
-        // Если был свернут, разворачиваем
         if(isChatMinimized) {
-           isChatMinimized = false;
-           aiChat.classList.remove("minimized");
-           aiChatToggle.textContent = "−";
+          isChatMinimized = false;
+          aiChat.classList.remove("minimized");
+          const toggleBtn = document.getElementById('ai-chat-toggle');
+          if (toggleBtn) toggleBtn.innerHTML = '<span class="toggle-icon">−</span>';
         }
+        
+        setTimeout(() => {
+          aiInput.focus();
+        }, 100);
       };
     }
 
@@ -1079,62 +1141,116 @@
       };
     }
 
-    function addMessage(sender, text, isAi = false) {
+    function addMessage(text, isAi = false) {
+      const messagesDiv = document.getElementById("ai-chat-body");
+      if (!messagesDiv) return;
+      
       const div = document.createElement("div");
       div.className = `ai-message ${isAi ? 'ai' : 'user'}`;
-      div.innerHTML = `<strong>${isAi ? 'Джон Кремль' : 'Вы'}:</strong> ${text}`;
-      aiBody.appendChild(div);
-      aiBody.scrollTop = aiBody.scrollHeight;
+      
+      // Форматируем ответ AI
+      let formattedText = text;
+      if (isAi) {
+        formattedText = text
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\n/g, '<br>')
+          .replace(/- (.*?)(<br>|$)/g, '• $1<br>');
+      }
+      
+      div.innerHTML = `
+        <div style="margin-bottom: 4px; font-size: 11px; opacity: 0.8;">
+          ${isAi ? '🤖 Джон Кремль' : '👤 Вы'}
+        </div>
+        <div>${formattedText}</div>
+      `;
+      
+      messagesDiv.appendChild(div);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
-    async function sendToAI(message, weekData) {
-      // ЗАМЕНИ ЭТО НА СВОЙ N8N WEBHOOK URL
+    // Функция для сбора данных недели
+    function collectWeekDataForAI() {
+      const weekStartInput = document.getElementById("weekStart");
+      const weekStart = weekStartInput ? weekStartInput.value : formatDate(startOfWeek(new Date()));
+      const weekData = loadWeek(weekStart);
+      
+      // Добавляем прогресс недели
+      const progress = document.getElementById("weekProgressText")?.textContent || '0%';
+      
+      return {
+        ...weekData,  // Все данные недели (days, habits, weeklyTasks)
+        progress: progress,
+        currentWeek: document.getElementById('currentRangeLabel')?.textContent || '',
+        collectedAt: new Date().toISOString()
+      };
+    }
+
+    async function sendToAI(message) {
       const N8N_WEBHOOK_URL = "https://n8n.decartus.team/webhook/ai-chat-john-kreml";
+      
       aiSend.disabled = true;
       aiSend.textContent = "⏳";
+      aiInput.disabled = true;
 
       try {
+        // Собираем данные недели
+        const weekData = collectWeekDataForAI();
+        
+        console.log('📤 Отправляем данные в AI:', { message, context: weekData });
+
         const response = await fetch(N8N_WEBHOOK_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json"
+          },
           body: JSON.stringify({
             message: message,
             context: weekData,
-            userAgent: "Севстар Планер",
             timestamp: new Date().toISOString()
           }),
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
 
         const data = await response.json();
-        addMessage("", data.reply || data.answer || "Не удалось получить ответ", true);
+        
+        // Получаем ответ из разных возможных полей
+        const reply = data.reply || data.answer || data.message || 
+                     data.text || "Не удалось получить ответ от AI";
+        
+        addMessage(reply, true);
+        
       } catch (error) {
-        console.error("AI Chat Error:", error);
-        addMessage("", "❌ Ошибка связи с Джоном Кремлем. Проверьте n8n webhook.", true);
+        console.error("❌ AI Chat Error:", error);
+        
+        let errorMessage = "❌ Ошибка связи с Джоном Кремлем.";
+        if (error.message.includes("timeout")) {
+          errorMessage += " Превышено время ожидания. Попробуйте позже.";
+        } else if (error.message.includes("Network")) {
+          errorMessage += " Проверьте подключение к интернету.";
+        } else {
+          errorMessage += ` Техническая информация: ${error.message}`;
+        }
+        
+        addMessage(errorMessage, true);
       } finally {
         aiSend.disabled = false;
         aiSend.textContent = "➤";
+        aiInput.disabled = false;
+        aiInput.focus();
       }
-    }
-
-    function getCurrentWeekData() {
-      const weekStartInput = document.getElementById("weekStart");
-      const weekStart = weekStartInput ? weekStartInput.value : formatDate(startOfWeek(new Date()));
-      return loadWeek(weekStart);
     }
 
     aiSend.addEventListener("click", () => {
       const text = aiInput.value.trim();
       if (!text) return;
 
-      const weekData = getCurrentWeekData();
-      addMessage("", text, false);
+      addMessage(text, false);
       aiInput.value = "";
       
-      sendToAI(text, weekData);
+      sendToAI(text);
     });
 
     aiInput.addEventListener("keypress", (e) => {
@@ -1531,9 +1647,6 @@
 
     function initWeek(startDateStr) {
       const app = document.querySelector(".app");
-      // Удаляем старые колонки (но оставляем header, sidebar, modal, chat)
-      // Структура grid такова: header, sidebar, day1..day7.
-      // day-columns имеют класс .day-column
       const oldCols = document.querySelectorAll(".day-column");
       oldCols.forEach(col => col.remove());
 
@@ -1580,7 +1693,7 @@
         target.tagName === "TEXTAREA" ||
         target.closest(".modal") ||
         target.closest("#ai-chat") || 
-        target.id === "open-ai-chat-btn" // Исключаем кнопку открытия
+        target.id === "open-ai-chat-btn"
       ) {
         return;
       }
@@ -1600,4 +1713,3 @@
   </script>
 </body>
 </html>
-
