@@ -983,33 +983,41 @@
       "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"
     ];
 
+    // ФИКС: Исправляем форматирование даты без смещения часового пояса
     function formatDate(d) {
-      return d.toISOString().slice(0, 10);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
 
     function addDays(dateStrOrDate, days) {
       const d = dateStrOrDate instanceof Date 
-        ? new Date(dateStrOrDate) : new Date(dateStrOrDate);
+        ? new Date(dateStrOrDate) : new Date(dateStrOrDate + 'T00:00:00'); // ФИКС: добавляем время для корректной работы
       d.setDate(d.getDate() + days);
       return d;
     }
 
+    // ФИКС: Исправляем startOfWeek для правильного определения понедельника
     function startOfWeek(date) {
       const d = new Date(date);
+      // В JavaScript: 0 - воскресенье, 1 - понедельник, 6 - суббота
       const day = d.getDay();
-      const diff = (day === 0 ? -6 : 1) - day;
-      return addDays(d, diff);
+      // Вычисляем разницу до понедельника
+      // Если day = 1 (понедельник) -> diff = 0
+      // Если day = 0 (воскресенье) -> diff = -6
+      // Если day = 2 (вторник) -> diff = -1 и т.д.
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      return d;
     }
 
+    // ФИКС: Новая функция для получения конца недели
     function endOfWeek(date) {
       const start = startOfWeek(date);
-      return addDays(start, 6);
-    }
-
-    function getWeekNumber(date) {
-      const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-      const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-      return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      return end;
     }
 
     function loadWeek(startDateStr) {
@@ -1302,7 +1310,7 @@
       dn.textContent = title;
       const dd = document.createElement("div");
       dd.className = "day-date";
-      const d = new Date(dayData.date);
+      const d = new Date(dayData.date + 'T00:00:00'); // ФИКС: добавляем время
       dd.textContent = d.getDate().toString().padStart(2,"0") + "." + (d.getMonth()+1).toString().padStart(2,"0");
       left.appendChild(dn);
       left.appendChild(dd);
@@ -1507,7 +1515,7 @@
     /* --- календарь месяца --- */
 
     function renderMonthCalendar(weekStartStr, week) {
-      const weekStartDate = new Date(weekStartStr);
+      const weekStartDate = new Date(weekStartStr + 'T00:00:00'); // ФИКС: добавляем время
       const monthTitle = document.getElementById("monthTitle");
       const monthLabel = document.getElementById("monthLabel");
       const currentRangeLabel = document.getElementById("currentRangeLabel");
@@ -1521,12 +1529,17 @@
       monthLabel.textContent = MONTH_NAMES[monthIndex] + " " + year;
 
       const weekEndDate = endOfWeek(weekStartDate);
-      currentRangeLabel.textContent =
-        weekStartDate.getDate().toString().padStart(2,"0") + "." +
-        (weekStartDate.getMonth()+1).toString().padStart(2,"0") +
-        " - " +
-        weekEndDate.getDate().toString().padStart(2,"0") + "." +
-        (weekEndDate.getMonth()+1).toString().padStart(2,"0");
+      
+      // ФИКС: Используем правильное форматирование дат
+      const formatForDisplay = (date) => {
+        return date.getDate().toString().padStart(2,"0") + "." + 
+               (date.getMonth()+1).toString().padStart(2,"0") + "." + 
+               date.getFullYear();
+      };
+      
+      currentRangeLabel.textContent = 
+        formatForDisplay(weekStartDate) + " - " + 
+        formatForDisplay(weekEndDate);
 
       grid.innerHTML = "";
       
@@ -1539,16 +1552,19 @@
         grid.appendChild(div);
       });
 
-      // Получаем первый день месяца и первый день для отображения в календаре
+      // Получаем первый день месяца
       const firstDayOfMonth = new Date(year, monthIndex, 1);
-      const firstDayOfCalendar = startOfWeek(firstDayOfMonth);
       
-      const todayStr = formatDate(new Date());
+      // Начало календаря - понедельник первой недели, содержащей 1-е число месяца
+      let firstGridDay = startOfWeek(firstDayOfMonth);
+      
+      const today = new Date();
+      const todayStr = formatDate(today);
       const weekStartStrFormatted = formatDate(weekStartDate);
 
       // Создаем 42 дня (6 недель)
       for (let i = 0; i < 42; i++) {
-        const currentDate = addDays(firstDayOfCalendar, i);
+        const currentDate = addDays(firstGridDay, i);
         const cell = document.createElement("div");
         cell.className = "cal-day";
         
@@ -1564,11 +1580,11 @@
         const dateStr = formatDate(currentDate);
         
         // Проверяем, входит ли день в выбранную неделю
-        const weekStart = startOfWeek(currentDate);
-        const weekEnd = endOfWeek(currentDate);
-        const currentWeekStartStr = formatDate(weekStart);
+        // ФИКС: Правильное сравнение недель
+        const dayWeekStart = startOfWeek(currentDate);
+        const dayWeekStartStr = formatDate(dayWeekStart);
         
-        if (currentWeekStartStr === weekStartStrFormatted) {
+        if (dayWeekStartStr === weekStartStrFormatted) {
           cell.classList.add("selected-week");
         }
         
@@ -1577,7 +1593,7 @@
         }
 
         cell.addEventListener("click", () => {
-          // При клике на день переходим к неделе, содержащей этот день
+          // ФИКС: При клике на день переходим к неделе, содержащей этот день
           const newWeekStart = startOfWeek(currentDate);
           initWeek(formatDate(newWeekStart));
         });
@@ -1585,8 +1601,11 @@
         grid.appendChild(cell);
       }
 
-      // Номер недели в году
-      const weekNumber = getWeekNumber(weekStartDate);
+      // Вычисляем номер недели в году
+      const firstDayOfYear = new Date(year, 0, 1);
+      const pastDaysOfYear = Math.floor((weekStartDate - firstDayOfYear) / 86400000);
+      const weekNumber = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+      
       weekLabel.textContent = "Неделя " + weekNumber;
     }
 
@@ -1716,7 +1735,8 @@
       // Обработчик изменения даты в поле ввода
       wsInput.onchange = () => {
         const selectedDate = wsInput.value;
-        const weekStart = startOfWeek(selectedDate);
+        // ФИКС: При изменении даты в поле ввода, переходим к неделе, содержащей эту дату
+        const weekStart = startOfWeek(new Date(selectedDate + 'T00:00:00'));
         initWeek(formatDate(weekStart));
       };
 
@@ -1726,12 +1746,14 @@
 
       // Обработчики для кнопок предыдущей/следующей недели
       document.getElementById("prevWeek").onclick = () => {
-        const d = addDays(startDateStr, -7);
+        const currentDate = new Date(startDateStr + 'T00:00:00');
+        const d = addDays(currentDate, -7);
         initWeek(formatDate(d));
       };
       
       document.getElementById("nextWeek").onclick = () => {
-        const d = addDays(startDateStr, 7);
+        const currentDate = new Date(startDateStr + 'T00:00:00');
+        const d = addDays(currentDate, 7);
         initWeek(formatDate(d));
       };
     }
